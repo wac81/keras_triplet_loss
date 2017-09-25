@@ -89,16 +89,19 @@ for i, single in enumerate(y):
 y = ones(len(q))
 model_train.fit([array(q),array(right_a),array(wrong_a)], y, epochs=3)
 #其中q,a1,a2分别是问题、正确答案、错误答案的batch，
-model_train.save('./loss.model')
-model_train.save_weights('./loss.weights')
+# model_train.save('./loss.model')
+# model_train.save_weights('./loss.weights')
+# model_q_encoder.save_weights('./q_loss.weights')
+# model_a_encoder.save_weights('./a_loss.weights')
 
-# model_train.load_weights('./loss.weights')
-
+model_train.load_weights('./loss.weights')
+model_q_encoder.load_weights('./q_loss.weights')
+model_a_encoder.load_weights('./a_loss.weights')
 q = u'家里的大洗衣机基本就闲置了，这个更方便'
 sequence = [dicts[char] for char in q]
 X_q = pad_sequences([sequence], maxlen=nb_features)
 
-a_r = u'不错，家里的大洗衣机基本就闲置了.'
+a_r = u'不错，家里的大洗衣机基本就闲置了'
 sequence = [dicts[char] for char in a_r]
 X_a_r = pad_sequences([sequence], maxlen=nb_features)
 
@@ -113,14 +116,13 @@ X_a_w = pad_sequences([sequence], maxlen=nb_features)
 import numpy as np
 def predict(model, q, a):
 
-    user_vector = model.get_layer('question_embedding').get_weights()[0][q]
-    item_matrix = model.get_layer('answer_embedding').get_weights()[0][a]
+    # user_vector = model.get_layer('question_embedding').get_weights()[0][q]
+    # item_matrix = model.get_layer('answer_embedding').get_weights()[0][a]
 
-    # user_vector = model_q_encoder.predict([q])
-    # item_matrix = model_a_encoder.predict([a])
+    user_vector = model_q_encoder.predict([q])
+    item_matrix = model_a_encoder.predict([a])
 
-    scores = (np.dot(user_vector,
-                     item_matrix.T))
+    scores = (np.dot(user_vector, item_matrix.T))
 
     return scores
 
