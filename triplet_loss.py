@@ -13,18 +13,23 @@ nb_classes = 10
 encode_size = 64
 margin = 0.1
 
-embedding = Embedding(nb_features,word_size)
+embedding_q = Embedding(nb_features,word_size,name='question_embedding')
+embedding_a = Embedding(nb_features,word_size,name='answer_embedding')
+
 lstm_encoder = LSTM(encode_size)
 
-def encode(input):
-    return lstm_encoder(embedding(input))
+def encode_q(input):
+    return lstm_encoder(embedding_q(input))
+
+def encode_a(input):
+    return lstm_encoder(embedding_a(input))
 
 q_input = Input(shape=(None,))
 a_right = Input(shape=(None,))
 a_wrong = Input(shape=(None,))
-q_encoded = encode(q_input)
-a_right_encoded = encode(a_right)
-a_wrong_encoded = encode(a_wrong)
+q_encoded = encode_q(q_input)
+a_right_encoded = encode_a(a_right)
+a_wrong_encoded = encode_a(a_wrong)
 
 q_encoded = Dense(encode_size)(q_encoded) #一般的做法是，直接讲问题和答案用同样的方法encode成向量后直接匹配，但我认为这是不合理的，我认为至少经过某个变换。
 
@@ -82,18 +87,18 @@ for i, single in enumerate(y):
 
 
 y = ones(len(q))
-# model_train.fit([array(q),array(right_a),array(wrong_a)], y, epochs=3)
-# #其中q,a1,a2分别是问题、正确答案、错误答案的batch，
-# model_train.save('./loss.model')
-# model_train.save_weights('./loss.weights')
+model_train.fit([array(q),array(right_a),array(wrong_a)], y, epochs=3)
+#其中q,a1,a2分别是问题、正确答案、错误答案的batch，
+model_train.save('./loss.model')
+model_train.save_weights('./loss.weights')
 
-model_train.load_weights('./loss.weights')
+# model_train.load_weights('./loss.weights')
 
 q = u'家里的大洗衣机基本就闲置了，这个更方便'
 sequence = [dicts[char] for char in q]
 X_q = pad_sequences([sequence], maxlen=nb_features)
 
-a_r = u'不错，家里的大洗衣机基本就闲置了'
+a_r = u'不错，家里的大洗衣机基本就闲置了.'
 sequence = [dicts[char] for char in a_r]
 X_a_r = pad_sequences([sequence], maxlen=nb_features)
 
@@ -103,5 +108,24 @@ sequence = [dicts[char] for char in a_w]
 X_a_w = pad_sequences([sequence], maxlen=nb_features)
 
 
-print model_train.predict([array(X_q),array(X_a_r),array(X_a_w)])
+
+
+import numpy as np
+def predict(model, q, a):
+
+    user_vector = model.get_layer('question_embedding').get_weights()[0][q]
+    item_matrix = model.get_layer('answer_embedding').get_weights()[0][a]
+
+    # user_vector = model_q_encoder.predict([q])
+    # item_matrix = model_a_encoder.predict([a])
+
+    scores = (np.dot(user_vector,
+                     item_matrix.T))
+
+    return scores
+
+print model_train.predict([array(X_q), array(X_a_r), array(X_a_w)])
+
+results = predict(model_train, array(X_q), array(X_a_r))
+print results
 
